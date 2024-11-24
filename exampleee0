@@ -1,0 +1,26 @@
+from google.cloud import storage
+from PIL import Image
+import io
+
+def create_thumbnail(data, context):
+    client = storage.Client()
+    bucket = client.bucket('processed-thumbnails')
+    input_bucket = client.bucket('uploaded-images')
+    
+    # Read the file
+    blob = input_bucket.blob(data['name'])
+    image_data = blob.download_as_bytes()
+    
+    # Generate thumbnail
+    with Image.open(io.BytesIO(image_data)) as img:
+        img.thumbnail((128, 128))
+        output = io.BytesIO()
+        img.save(output, format='JPEG')
+        output.seek(0)
+    
+    # Upload the thumbnail
+    thumbnail_blob = bucket.blob(f"thumbnails/{data['name']}")
+    thumbnail_blob.upload_from_file(output)
+    
+    print(f"Thumbnail created for {data['name']}")
+
